@@ -1,0 +1,17 @@
+{
+  "name": "pareja-virtual-lion-queen-diaz",
+  "version": "1.0.0",
+  "description": "Proxy seguro (server.js) para la app Pareja Virtual · Lion Queen Díaz. Protege la API Key de OpenAI y sirve el frontend estático (index.html, assets/, historias.json).",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5"
+  }
+}
