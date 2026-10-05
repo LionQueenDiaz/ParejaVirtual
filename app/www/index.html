@@ -3,15 +3,15 @@
 <meta name="theme-color" content="#080a16"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Pareja Virtual · Lion Queen Díaz</title>
 <style>
-:root{--bg:#080a16;--card:#121526;--mut:#b9bdd6;--primary-neon:#8C52FF;--pr:140,82,255;--vio:var(--primary-neon);--blue:var(--primary-neon);--pink:var(--primary-neon);--border-neon:rgba(var(--pr),.7);--glow-neon:rgba(var(--pr),.6);--button-bg-neon:rgba(var(--pr),.16);--text-accent:#C9AEFF;--on-primary:#fff;--vr:var(--pr);--line:var(--border-neon);--adh:70px;color-scheme:dark}
+:root{--bg:#080a16;--card:#121526;--mut:#b9bdd6;--primary-neon:#8C52FF;--pr:140,82,255;--vio:var(--primary-neon);--blue:var(--primary-neon);--pink:var(--primary-neon);--border-neon:rgba(var(--pr),.7);--glow-neon:rgba(var(--pr),.6);--button-bg-neon:rgba(var(--pr),.16);--text-accent:#C9AEFF;--on-primary:#fff;--vr:var(--pr);--line:var(--border-neon);--adh:92px;color-scheme:dark}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{margin:0;background:var(--bg);color:#fff;font-family:"Trebuchet MS","Segoe UI",system-ui,sans-serif}
+html,body{margin:0;background:var(--bg);color:#fff;font-family:"Trebuchet MS","Segoe UI",system-ui,sans-serif;overflow-x:hidden;max-width:100vw}
 body{display:flex;justify-content:center;background:radial-gradient(circle at 50% -10%,rgba(var(--pr),.22),var(--bg) 55%)}
 #app{width:100%;min-height:100dvh;padding:calc(env(safe-area-inset-top,0px) + 10px) 12px calc(var(--adh) + 100px + env(safe-area-inset-bottom,0px))}
 .top{display:flex;gap:8px;align-items:center}
 select,.search{background:#0d1022;color:#fff;border:1.5px solid var(--vio);border-radius:999px;box-shadow:0 0 10px rgba(var(--vr),.55);font:inherit;font-size:17px}
 select{padding:9px 8px;max-width:130px}
-.search{flex:1;display:flex;align-items:center;gap:6px;padding:0 12px}
+.search{flex:1;min-width:0;display:flex;align-items:center;gap:6px;padding:0 12px}
 .search input{flex:1;min-width:0;background:none;border:0;outline:0;color:#fff;font:inherit;padding:9px 0}
 .pill{display:block;margin:14px auto;padding:11px 26px;border-radius:999px;border:2px solid var(--pink);background:var(--button-bg-neon);color:#fff;font:700 18px "Trebuchet MS",system-ui,sans-serif;box-shadow:0 0 16px rgba(var(--pr),.7),inset 0 0 12px rgba(var(--pr),.3);cursor:pointer}
 .pill.sm{margin:6px 0;padding:9px 16px;font-size:16px;display:inline-block}
@@ -65,7 +65,7 @@ h2{margin:8px 0 12px;font-size:22px}
 :focus-visible{outline:2px solid var(--pink);outline-offset:2px}
 #splash{position:fixed;inset:0;width:100vw;height:100vh;z-index:100;background:#05030f;transition:opacity .5s}#splash.out{opacity:0;pointer-events:none}
 .spl{position:absolute;inset:0;width:100vw;height:100vh;opacity:0;transition:opacity .4s}.spl.on{opacity:1}
-.spl img{display:block;width:100vw;height:100vh;object-fit:contain}
+.spl img{display:block;width:100vw;height:100vh;object-fit:cover}
 .m audio{max-width:100%;height:36px}
 .nav button.on{color:var(--text-accent)}h2{color:var(--text-accent)}.chip.on{color:var(--text-accent)}
 .mdl{background:var(--card);border:1.5px solid var(--line);box-shadow:0 0 12px rgba(var(--pr),.35)}
@@ -113,6 +113,8 @@ const HISTORIAS_DATABASE=[{"id":"alexander_millonario_demisexual_hombre","nombre
 
 /* ===== ESTADO ===== */
 const $=s=>document.querySelector(s);
+/* ¿Estamos corriendo dentro de la app instalada (Capacitor) o en un navegador normal (Render)? Se define aquí arriba porque varias partes del código más abajo la necesitan. */
+const esAppNativa = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
 const st={vc:0,vFoto:0,vVoz:0,vAudioBonus:0,custom:[],draft:null,galeria:[],pendingAvatar:null,chatDay:"",chatOpened:[],key:"",vip:false,coins:120,adfree:false,extraAud:0,name:"",nick:"",cart:[],themes:{def:1},seen:{},theme:"def"};
 try{st.draft=JSON.parse(localStorage.pv_draft||"null")}catch(e){}
 try{st.galeria=JSON.parse(localStorage.pv_gal||"[]")}catch(e){}
@@ -145,8 +147,53 @@ const ADMOB_IDS = {
 /* ===== ANUNCIOS (simulados) ===== */
 function adModal(titulo,seg,btn,done){titulo=T(titulo);btn=T(btn);const m=$("#modal"),b=$("#mb");$("#mt").textContent=titulo;$("#msp").style.display="block";b.style.display="none";m.classList.add("show");let s=seg;
  const iv=setInterval(()=>{$("#mt").textContent=titulo+" ("+(--s)+")";if(s<=0){clearInterval(iv);$("#msp").style.display="none";b.textContent=btn;b.style.display="block";b.onclick=()=>{m.classList.remove("show");done&&done()}}},1000);}
-const interstitial=()=>{if(!st.adfree)adModal("Anuncio",3,"Cerrar anuncio")};
-const rewarded=cb=>adModal("Video de recompensa",4,"Reclamar recompensa",cb);
+/* ===== Conexión real con AdMob (solo dentro de la app instalada; en Render sigue el simulador) =====
+   El banner es una vista NATIVA de Android (no HTML), así que se dibuja por encima de todo sin importar
+   el z-index de la página. Por eso lo inicializamos ya, pero el banner (showBanner) solo se muestra
+   hasta que el splash termina — lo dispara mostrarBannerReal(), llamada al final de la secuencia de splash. */
+let AdMobPlugin = null;
+if (esAppNativa && window.Capacitor.Plugins && window.Capacitor.Plugins.AdMob) {
+  AdMobPlugin = window.Capacitor.Plugins.AdMob;
+  AdMobPlugin.initialize().catch(err => console.warn("AdMob no inicializó:", err));
+  /* Google nos avisa la ALTURA REAL del banner en este celular — ajustamos el espacio reservado
+     (--adh) a ese valor exacto, en vez de adivinar un número fijo que nunca calza en todos los equipos. */
+  AdMobPlugin.addListener("bannerAdSizeChanged", (size) => {
+    if (size && size.height) {
+      document.documentElement.style.setProperty("--adh", Math.ceil(size.height) + "px");
+    }
+  });
+}
+function mostrarBannerReal(){
+  if (!AdMobPlugin) return;
+  AdMobPlugin.showBanner({
+    adId: ADMOB_IDS.banner,
+    adSize: "ADAPTIVE_BANNER",
+    position: "BOTTOM_CENTER",
+    margin: 0
+  }).then(() => { const ad=document.getElementById("ad"); if(ad) ad.style.display="none"; })
+    .catch(err => console.warn("Banner AdMob no cargó:", err));
+}
+
+const interstitial=()=>{
+  if (st.adfree) return;
+  if (AdMobPlugin) {
+    AdMobPlugin.prepareInterstitial({ adId: ADMOB_IDS.interstitial })
+      .then(() => AdMobPlugin.showInterstitial())
+      .catch(err => console.warn("Intersticial no cargó:", err));
+  } else {
+    adModal("Anuncio",3,"Cerrar anuncio");
+  }
+};
+const rewarded=cb=>{
+  if (AdMobPlugin) {
+    AdMobPlugin.prepareRewardVideoAd({ adId: ADMOB_IDS.rewarded })
+      .then(() => AdMobPlugin.showRewardVideoAd())
+      .then(() => cb())   // solo se ejecuta la recompensa si el usuario vio el anuncio COMPLETO
+      .catch(err => { console.warn("Recompensado no cargó:", err); toast("No se pudo cargar el anuncio, intenta de nuevo."); });
+  } else {
+    adModal("Video de recompensa",4,"Reclamar recompensa",cb);
+  }
+};
 const rewardedN=(n,cb,i=1)=>rewarded(()=>{if(i<n){toast("Anuncio "+i+" de "+n+" completado");rewardedN(n,cb,i+1)}else cb()});
 
 /* ===== VISTAS ===== */
@@ -349,8 +396,7 @@ function lockInput(){
   c.extraMs+=extra;ctSave();inp.disabled=false;inp.placeholder=T("Escribe un mensaje...");toast("+"+mins+" minutos agregados a este chat 🎉");cab()}))}
 const bub=(x,i)=>x.audio?`<div class="m u"><audio controls src="${x.audio}"></audio></div>`:x.img?`<div class="m b"><img src="${x.img}" alt="" style="width:100%;border-radius:12px" onerror="this.onerror=null;this.src=cover(actual)"></div>`:x.locked!==undefined?`<div class="m b"><button class="pill sm" data-v="${i}">${x.locked?T("🔒 Escuchar Nota de Voz (Ver 2 Anuncios Recompensados)"):"▶️ 🎙️"}</button></div>`:`<div class="m ${x.r}">${esc(x.t).replace(/\*(.+?)\*/g,"<i>$1</i>")}</div>`;
 const pintar=()=>{const m=$("#msgs");m.innerHTML=chats[actual.id].m.map(bub).join("");m.scrollTop=m.scrollHeight};
-$("#msgs").onclick=e=>{const b=e.target.closest("[data-v]");if(!b)return;const x=chats[actual.id].m[+b.dataset.v];x.locked?adModal(st.vip?"Audios del mes agotados · o compra el paquete extra en la Tienda":"🔒 Nota de voz bloqueada",1,"Ver 2 Anuncios Recompensados",()=>rewardedN(2,()=>{x.locked=false;pintar();reproducir(x.t)})):reproducir(x.t)};
-function hablar(txt){reproducir(txt)}
+$("#msgs").onclick=e=>{const b=e.target.closest("[data-v]");if(!b)return;const x=chats[actual.id].m[+b.dataset.v];x.locked?adModal(st.vip?"Audios del mes agotados · o compra el paquete extra en la Tienda":"🔒 Nota de voz bloqueada",1,"Ver 2 Anuncios Recompensados",()=>rewardedN(2,()=>{x.locked=false;pintar();reproducir(x)})):reproducir(x)};
 async function enviar(audioUrl,transcript){
  const c=chats[actual.id],h=actual,inp=$("#ci"),today=new Date().toDateString();
  stopTyping();
@@ -458,18 +504,36 @@ function calibraRate(len,base){
  const target=20,cps=15*base;
  let r=base*(len/(cps*target));
  return Math.max(.6,Math.min(1.35,r||base))}
-async function reproducir(txt){
- txt=txt.replace(/\*.+?\*/g,"").trim()||txt;
- if(AI()){try{let vozTexto=txt;
-   if(AI()){try{vozTexto=await openaiChat(actual,chats[actual.id],true)}catch(e){}}
-   const a=new Audio(await tts(vozTexto,actual.voiceName||VZ[actual.voice_type]));await a.play();return}catch(e){}}
- if(!window.speechSynthesis){toast("Tu navegador no soporta voz hablada");return}
+/* Una sola nota de voz por mensaje: se genera UNA vez (la primera vez que se reproduce) y se
+   guarda en el propio mensaje (x.vozTexto / x.audioUrl). Las siguientes veces que se toque
+   "reproducir" se repite exactamente la misma — nunca se vuelve a cobrar la API ni se inventa
+   una respuesta distinta. audioActual/audioCargando evitan que se encimen dos audios a la vez. */
+let audioActual=null,audioCargando=false;
+function detenerAudioActual(){if(audioActual){try{audioActual.pause();audioActual.currentTime=0}catch(e){}audioActual=null}if(window.speechSynthesis)try{speechSynthesis.cancel()}catch(e){}}
+async function reproducir(x){
+ if(audioCargando)return;              // ignora toques repetidos mientras carga
+ detenerAudioActual();                  // corta cualquier audio que siga sonando
+ const txtBase=(x.t||"").replace(/\*.+?\*/g,"").trim()||x.t||"";
+ if(x.audioUrl){audioActual=new Audio(x.audioUrl);audioActual.play().catch(()=>{});return}
+ audioCargando=true;
  try{
+  if(AI()){
+   try{
+    if(!x.vozTexto)x.vozTexto=await openaiChat(actual,chats[actual.id],true); // se genera UNA sola vez
+    const url=await tts(x.vozTexto,actual.voiceName||VZ[actual.voice_type]);
+    x.audioUrl=url;                     // se guarda: la próxima vez no se vuelve a pedir ni a cobrar
+    audioActual=new Audio(url);audioActual.play().catch(()=>{});
+    return;
+   }catch(e){}
+  }
+  if(!window.speechSynthesis){toast("Tu navegador no soporta voz hablada");return}
   const bcp=SRLANG[lang]||"es-MX",st_=STYLE_PARAMS[actual.voiceStyle]||FALLBACK_STYLE[actual.voice_type]||{pitch:1,rate:1};
-  const u=new SpeechSynthesisUtterance(txt),nv=nativeVoice(bcp);
-  if(nv)u.voice=nv;u.lang=bcp;u.pitch=st_.pitch;u.rate=calibraRate(txt.length,st_.rate);
-  speechSynthesis.speak(u)
- }catch(e){toast("No se pudo reproducir la voz")}}
+  const u=new SpeechSynthesisUtterance(x.vozTexto||txtBase),nv=nativeVoice(bcp);
+  if(nv)u.voice=nv;u.lang=bcp;u.pitch=st_.pitch;u.rate=calibraRate((x.vozTexto||txtBase).length,st_.rate);
+  speechSynthesis.speak(u);
+ }catch(e){toast("No se pudo reproducir la voz")}
+ finally{audioCargando=false}
+}
 /* ===== CONFIG IA: OpenAI (gpt-4o-mini para chat, tts-1 para voz) =====
    ⚠️ IMPORTANTE — NO pegues aquí tu API Key real si esta app se va a empaquetar como APK o
    publicar para otras personas: cualquiera puede extraerla del paquete y usarla a tu nombre.
@@ -478,7 +542,6 @@ async function reproducir(txt){
    Opción rápida SOLO para pruebas locales en tu propia laptop (nunca en un build público):
    pega tu clave en OPENAI_KEY de tu copia local del archivo, sin subirla ni compartirla. */
 /* Detecta solo: dentro de la app instalada usa la URL completa de Render; en el navegador (Render) sigue usando /v1 como siempre, sin cambios. */
-const esAppNativa = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
 const CONFIG={PROXY_URL: esAppNativa ? "https://parejavirtual.onrender.com/v1" : "/v1", OPENAI_KEY:""};
 const AI=()=>CONFIG.PROXY_URL||CONFIG.OPENAI_KEY;
 const oaHeaders=()=>CONFIG.PROXY_URL?{"Content-Type":"application/json"}:{"Content-Type":"application/json","Authorization":"Bearer "+CONFIG.OPENAI_KEY};
@@ -526,7 +589,7 @@ try{
  savedChars.forEach(h=>{if(h&&h.id&&!HISTORIAS_DATABASE.find(x=>x.id===h.id)){HISTORIAS_DATABASE.unshift(h);if(!st.custom.includes(h.id))st.custom.unshift(h.id);addToActiveChats(h)}});
 }catch(e){}
 render();
-{const S=document.querySelectorAll(".spl");setTimeout(()=>{S[0].classList.remove("on");S[1].classList.add("on")},3000);setTimeout(()=>$("#splash").classList.add("out"),6000);setTimeout(()=>{$("#splash").remove();daily()},6700)}
+{const S=document.querySelectorAll(".spl");setTimeout(()=>{S[0].classList.remove("on");S[1].classList.add("on")},3000);setTimeout(()=>$("#splash").classList.add("out"),6000);setTimeout(()=>{$("#splash").remove();daily();mostrarBannerReal()},6700)}
 try{screen.orientation.lock("portrait").catch(()=>{})}catch(e){}
 let dr=null;$("#view").addEventListener("pointerdown",e=>{const c=e.target.closest(".chips");if(c&&e.pointerType==="mouse")dr={c,x:e.clientX,s:c.scrollLeft,m:0}});
 addEventListener("pointermove",e=>{if(dr){const d=e.clientX-dr.x;dr.m=Math.max(dr.m,Math.abs(d));dr.c.scrollLeft=dr.s-d}});
